@@ -60,7 +60,7 @@ smtpFrom: process.env.SMTP_FROM ?? "",
 
   corsOrigin: getEnv(
     "CORS_ORIGIN",
-    "http://localhost:3000",
+    "http://localhost:3001",
   ),
 
   category: {

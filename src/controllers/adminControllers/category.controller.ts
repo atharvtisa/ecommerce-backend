@@ -1,6 +1,6 @@
 import {Request, Response } from "express";
 
-import { createCategory, getCategoryById } from "../../services/category.service";
+import { createCategory, getCategoryById, listCategories, } from "../../services/category.service";
 import { HttpStatus } from "../../constants/http.constant";
 import { MessageConstant } from "../../constants/message.constant";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
@@ -9,11 +9,12 @@ import {updateCategory as updateCategoryService,} from "../../services/category.
 
 import {  deleteCategory as deleteCategoryService,} from "../../services/category.service";
 
-import {  uploadCategoryImages as uploadCategoryImagesService,} from "../../services/categoryImage.service";
-import { deleteCategoryImage as deleteCategoryImageService,}from "../../services/categoryImage.service";
+import {
+  updateCategoryStatus as updateCategoryStatusService,
+} from "../../services/category.service";
 
 
-import { categoryIdSchema,updateCategorySchema } from "../../validations/category.validation";
+import { categoryIdSchema,updateCategorySchema,   updateCategoryStatusSchema, } from "../../validations/category.validation";
 
 
 export const createCategoryController = async (
@@ -21,9 +22,16 @@ export const createCategoryController = async (
   res: Response,
 ): Promise<void> => {
   try {
+
+     const files =
+      (req.files as Express.Multer.File[]) || [];
+
+          console.log("CATEGORY FILES:", files);
+
     const category = await createCategory({
       name: req.body.name,
       description: req.body.description,
+      files
     });
 
     res.status(HttpStatus.CREATED).json({
@@ -56,17 +64,68 @@ export const createCategoryController = async (
 };
 
 
+export const getAllCategories = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
 
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
+
+    const status =
+      req.query.status === "inactive"
+        ? "inactive"
+        : req.query.status === "all"
+          ? "all"
+          : "active";
+
+    const result = await listCategories({
+      page,
+      limit,
+      search,
+      status,
+    });
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      message: MessageConstant.SUCCESS.FETCH,
+      data: result.categories,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : MessageConstant.ERROR.INTERNAL_SERVER;
+
+    res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .json({
+        success: false,
+        message,
+      });
+  }
+};
+
+// --------------------
+// GET CATEGORY DETAIL
+// --------------------
 
 export const getCategory = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { error, value } = categoryIdSchema.validate(req.body);
+    const { error, value } =
+      categoryIdSchema.validate(req.body);
 
     if (error) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: error.details[0].message,
       });
@@ -74,9 +133,10 @@ export const getCategory = async (
       return;
     }
 
-    const category = await getCategoryById(value.id);
+    const category =
+      await getCategoryById(value.id);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: MessageConstant.SUCCESS.FETCH,
       data: category,
@@ -88,7 +148,9 @@ export const getCategory = async (
         : MessageConstant.ERROR.INTERNAL_SERVER;
 
     const statusCode =
-      message === "Category not found." ? 404 : 500;
+      message === "Category not found."
+        ? HttpStatus.NOT_FOUND
+        : HttpStatus.INTERNAL_SERVER_ERROR;
 
     res.status(statusCode).json({
       success: false,
@@ -101,16 +163,16 @@ export const getCategory = async (
 
 
 
-
 export const updateCategory = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { error, value } = updateCategorySchema.validate(req.body);
+    const { error, value } =
+      updateCategorySchema.validate(req.body);
 
     if (error) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: error.details[0].message,
       });
@@ -118,9 +180,44 @@ export const updateCategory = async (
       return;
     }
 
-    const category = await updateCategoryService(value);
+    const files =
+      (req.files as Express.Multer.File[]) || [];
 
-    res.status(200).json({
+    let removeImages: string[] = [];
+
+    if (req.body.removeImages) {
+      try {
+        removeImages = JSON.parse(
+          req.body.removeImages,
+        );
+
+        if (!Array.isArray(removeImages)) {
+          throw new Error();
+        }
+      } catch {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message:
+            "removeImages must be a valid JSON array.",
+        });
+
+        return;
+      }
+    }
+
+    const category =
+      await updateCategoryService({
+        id: value.id,
+        name: value.name,
+
+        // only updates when provided
+        description: value.description,
+
+        files,
+        removeImages,
+      });
+
+    res.status(HttpStatus.OK).json({
       success: true,
       message: MessageConstant.SUCCESS.UPDATE,
       data: category,
@@ -132,7 +229,9 @@ export const updateCategory = async (
         : MessageConstant.ERROR.INTERNAL_SERVER;
 
     const statusCode =
-      message === "Category not found." ? 404 : 400;
+      message === "Category not found."
+        ? HttpStatus.NOT_FOUND
+        : HttpStatus.BAD_REQUEST;
 
     res.status(statusCode).json({
       success: false,
@@ -141,6 +240,56 @@ export const updateCategory = async (
   }
 };
 
+
+
+export const updateCategoryStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { error, value } =
+      updateCategoryStatusSchema.validate(
+        req.body,
+      );
+
+    if (error) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: error.details[0].message,
+      });
+
+      return;
+    }
+
+    const category =
+      await updateCategoryStatusService(
+        value.id,
+        value.status,
+      );
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      message:
+        "Category status updated successfully.",
+      data: category,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : MessageConstant.ERROR.INTERNAL_SERVER;
+
+    const statusCode =
+      message === "Category not found."
+        ? HttpStatus.NOT_FOUND
+        : HttpStatus.BAD_REQUEST;
+
+    res.status(statusCode).json({
+      success: false,
+      message,
+    });
+  }
+};
 
 
 
@@ -183,91 +332,3 @@ export const deleteCategory = async (
 };
 
 
-
-
-export const uploadCategoryImages = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { error, value } = categoryIdSchema.validate(req.body);
-
-    if (error) {
-      res.status(400).json({
-        success: false,
-        message: error.details[0].message,
-      });
-
-      return;
-    }
-
-    const files = req.files as Express.Multer.File[];
-
-    const images = await uploadCategoryImagesService({
-      categoryId: value.id,
-      files,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: MessageConstant.SUCCESS.CREATE,
-      data: images,
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : MessageConstant.ERROR.INTERNAL_SERVER;
-
-    const statusCode =
-      message === "Category not found." ? 404 : 400;
-
-    res.status(statusCode).json({
-      success: false,
-      message,
-    });
-  }
-};
-
-
-
-
-
-export const deleteCategoryImage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { error, value } = categoryIdSchema.validate(req.body);
-
-    if (error) {
-      res.status(400).json({
-        success: false,
-        message: error.details[0].message,
-      });
-
-      return;
-    }
-
-    const result = await deleteCategoryImageService(value.id);
-
-    res.status(200).json({
-      success: true,
-      message: MessageConstant.SUCCESS.DELETE,
-      data: result,
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : MessageConstant.ERROR.INTERNAL_SERVER;
-
-    const statusCode =
-      message === "Category image not found." ? 404 : 500;
-
-    res.status(statusCode).json({
-      success: false,
-      message,
-    });
-  }
-};

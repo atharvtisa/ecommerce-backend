@@ -14,7 +14,10 @@ import {
   changeAdminPassword,
    getAdminProfile,
     updateAdminProfile,
-
+ requestAdminEmailChange,
+  verifyAdminEmailChangeOtp,
+  resendAdminEmailChangeOtp,
+    resendAdminPasswordResetOtp,
 } from "../../services/adminAuth.service";
 
 import {
@@ -23,10 +26,17 @@ import {
   resetPasswordSchema,
   changePasswordSchema,
     updateAdminProfileSchema,
+     requestAdminEmailChangeSchema,
+  verifyAdminEmailChangeOtpSchema,
+   resendAdminPasswordResetOtpSchema,
 } from "../../validations/adminAuth.validation";
 
 import { HttpStatus } from "../../constants/http.constant";
 import { MessageConstant } from "../../constants/message.constant";
+
+// --------------------
+// ADMIN LOGIN
+// --------------------
 
 export const adminLogin = async (
   req: Request,
@@ -38,11 +48,22 @@ export const adminLogin = async (
       password: req.body.password,
     });
 
+
+res.cookie("adminToken", result.token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
+
     res.status(HttpStatus.OK).json({
-      success: true,
-      message: MessageConstant.AUTH.LOGIN_SUCCESS,
-      data: result,
-    });
+  success: true,
+  message: MessageConstant.AUTH.LOGIN_SUCCESS,
+  data: {
+    admin: result.admin,
+  },
+});
   } catch (error) {
     const message =
       error instanceof Error
@@ -55,6 +76,13 @@ export const adminLogin = async (
     });
   }
 };
+
+
+
+// --------------------
+// FORGOT PASSWORD
+// --------------------
+
 
 export const forgotPassword = async (
   req: Request,
@@ -102,6 +130,65 @@ export const forgotPassword = async (
   }
 };
 
+
+
+
+
+export const resendAdminPasswordResetOtpController =
+  async (
+    req: Request,
+    res: Response,
+  ): Promise<void> => {
+    try {
+      const { error, value } =
+        resendAdminPasswordResetOtpSchema.validate(
+          req.body,
+        );
+
+      if (error) {
+        res
+          .status(HttpStatus.BAD_REQUEST)
+          .json({
+            success: false,
+            message:
+              error.details[0]?.message,
+          });
+
+        return;
+      }
+
+      const result =
+        await resendAdminPasswordResetOtp(
+          value.email,
+        );
+
+      res.status(HttpStatus.OK).json({
+        success: true,
+        message:
+          "A new password reset OTP has been sent successfully.",
+        data: result,
+      });
+    } catch (error) {
+      res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : MessageConstant.ERROR
+                  .INTERNAL_SERVER,
+        });
+    }
+  };
+
+
+
+// --------------------
+// VERIFY OTP
+// --------------------
+
+
 export const verifyOtp = async (
   req: Request,
   res: Response,
@@ -146,6 +233,13 @@ export const verifyOtp = async (
   }
 };
 
+
+
+// --------------------
+// RESET PASSWORD
+// --------------------
+
+
 export const resetPassword = async (
   req: Request,
   res: Response,
@@ -189,6 +283,15 @@ export const resetPassword = async (
     });
   }
 };
+
+
+
+
+// --------------------
+// CHANGE PASSWORD 
+// --------------------
+
+
 
 export const changePassword = async (
   req: AuthenticatedRequest,
@@ -249,6 +352,12 @@ export const changePassword = async (
 };
 
 
+// --------------------
+// GET PROFILE
+// --------------------
+
+
+
 
 export const getProfile = async (
   req: AuthenticatedRequest,
@@ -294,6 +403,149 @@ export const getProfile = async (
 
 
 
+
+export const requestAdminEmailChangeController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.admin) {
+      res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        message: MessageConstant.AUTH.UNAUTHORIZED,
+      });
+      return;
+    }
+
+    const { error, value } =
+      requestAdminEmailChangeSchema.validate(req.body);
+
+    if (error) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: error.details[0]?.message,
+      });
+      return;
+    }
+
+    const result = await requestAdminEmailChange(
+      req.admin.id,
+      value.newEmail,
+    );
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      message: "OTP sent to new email successfully.",
+      data: result,
+    });
+  } catch (error) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : MessageConstant.ERROR.INTERNAL_SERVER,
+    });
+  }
+};
+
+
+
+
+
+export const verifyAdminEmailChangeOtpController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.admin) {
+      res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+       message: MessageConstant.AUTH.UNAUTHORIZED,
+      });
+      return;
+    }
+
+    const { error, value } =
+      verifyAdminEmailChangeOtpSchema.validate(req.body);
+
+    if (error) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: error.details[0]?.message,
+      });
+      return;
+    }
+
+    const admin = await verifyAdminEmailChangeOtp(
+      req.admin.id,
+      value.otp,
+    );
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      message: "Email changed successfully.",
+      data: admin,
+    });
+  } catch (error) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : MessageConstant.ERROR.INTERNAL_SERVER,
+    });
+  }
+};
+
+
+
+
+
+export const resendAdminEmailChangeOtpController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.admin) {
+      res.status(HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        message: "Unauthorized access.",
+      });
+
+      return;
+    }
+
+    const result =
+      await resendAdminEmailChangeOtp(
+        req.admin.id,
+      );
+
+    res.status(HttpStatus.OK).json({
+      success: true,
+      message:
+        "A new OTP has been sent to your new email.",
+      data: result,
+    });
+  } catch (error) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : MessageConstant.ERROR.INTERNAL_SERVER,
+    });
+  }
+};
+
+
+// --------------------
+// UPDATE PROFILE
+// --------------------
+
+
+
+
 export const updateProfile = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -328,7 +580,7 @@ export const updateProfile = async (
       req.admin.id,
       {
         name: value.name,
-        email: value.email,
+       
         profileImage,
         removeProfileImage: value.removeProfileImage,
       },
@@ -359,4 +611,26 @@ export const updateProfile = async (
       message,
     });
   }
+};
+
+
+// --------------------
+// ADMIN LOGOUT
+// --------------------
+
+
+export const adminLogout = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  res.clearCookie("adminToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  res.status(HttpStatus.OK).json({
+    success: true,
+    message: MessageConstant.SUCCESS.LOGOUT,
+  });
 };

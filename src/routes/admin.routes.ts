@@ -1,11 +1,6 @@
 
 
 
-
-
-
-
-
 import { Router } from "express";
 
 import * as adminAuthController from "../controllers/adminControllers/adminAuth.controller";
@@ -13,6 +8,10 @@ import { adminLoginRateLimiter } from "../middlewares/rateLimit.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import { adminLoginSchema } from "../validations/adminAuth.validation";
 import {  updateProfile,} from "../controllers/adminControllers/adminAuth.controller";
+import {adminLogout, requestAdminEmailChangeController,
+  verifyAdminEmailChangeOtpController, resendAdminEmailChangeOtpController,resendAdminPasswordResetOtpController,} 
+  from "../controllers/adminControllers/adminAuth.controller";
+  import {adminProfileImageUpload , settingsImageUpload } from "../middlewares/upload.middleware";
 
 import { authenticateAdmin, AuthenticatedRequest} from "../middlewares/auth.middleware";
 import { authorizeAdmin } from "../middlewares/authorization.middleware";
@@ -21,7 +20,11 @@ import { authorizeAdmin } from "../middlewares/authorization.middleware";
  import * as categoryController from "../controllers/adminControllers/category.controller";
  import {createCategorySchema,} from "../validations/category.validation";
 import { categoryImageUpload } from "../middlewares/upload.middleware";
-import {adminProfileImageUpload } from "../middlewares/upload.middleware";
+
+
+import * as settingController from "../controllers/adminControllers/setting.controller";
+
+
 
 import { Response } from "express";
 
@@ -54,6 +57,12 @@ router.post(
   adminAuthController.verifyOtp,
 );
 
+router.post(
+  "/auth/forgot-password/resend-otp",
+   adminLoginRateLimiter,
+  resendAdminPasswordResetOtpController,
+);
+
 
 router.post(  "/auth/reset-password",  adminLoginRateLimiter,  adminAuthController.resetPassword,);
 
@@ -71,69 +80,107 @@ router.post(  "/auth/profile",  authenticateAdmin,  authorizeAdmin,  adminAuthCo
 
 router.post(
   "/auth/change-password",
-  adminLoginRateLimiter,
   adminAuthController.changePassword,
 );
 
 
 router.post(
-  "/auth/profile",
-  authenticateAdmin,
-  authorizeAdmin,
+  "/auth/update-profile",
   adminProfileImageUpload.single("profileImage"),
   updateProfile,
 );
 
 
-
-// Category
 router.post(
-  "/categories",
-  validate(createCategorySchema),
- categoryController.createCategoryController,
+  "/auth/request-email-change",
+
+  requestAdminEmailChangeController,
+);
+
+router.post(
+  "/auth/email/verify",
+ 
+  verifyAdminEmailChangeOtpController,
 );
 
 
+router.post(
+  "/auth/email/resend-otp",
+  resendAdminEmailChangeOtpController,
+);
+
+
+//-------------------------
+//  CATEGORIES  ROUTES
+// -----------------------
+
+
+router.post(
+  "/categories/create",
+  categoryImageUpload.array("images", 10,),
+  categoryController.createCategoryController,
+);
+
+router.post(
+  "/categories/list",
+  categoryController.getAllCategories,
+);
 
 router.post(
   "/categories/detail",
-  authenticateAdmin,
   categoryController.getCategory,
 );
 
 
 router.post(
   "/categories/update",
-  authorizeAdmin,
-  categoryController.updateCategory,
+  categoryImageUpload.array(  "images",  10,),categoryController.updateCategory,
+);
+
+
+router.post(
+  "/categories/update-status",
+  categoryController.updateCategoryStatus,
 );
 
 
 router.post(
   "/categories/delete",
-  authorizeAdmin,
   categoryController.deleteCategory,
 );
 
-
+// -----------------------
+// ADMIN LOGOUT
+// -----------------------
 
 router.post(
-  "/categories/images/upload",
-  authorizeAdmin,
-  categoryImageUpload.array("images", 10),
-  categoryController.uploadCategoryImages,
+  "/auth/logout",
+  adminLogout,
 );
 
 
+// --------------------
+// SETTINGS
+// --------------------
+
 router.post(
-  "/categories/images/delete",
-  authorizeAdmin,
-  categoryController.deleteCategoryImage,
+  "/settings",
+  settingController.getSettingsController,
 );
 
-
-
-
-
+router.post(
+  "/settings/update",
+  settingsImageUpload.fields([
+    {
+      name: "storeLogo",
+      maxCount: 1,
+    },
+    {
+      name: "favicon",
+      maxCount: 1,
+    },
+  ]),
+  settingController.updateSettingsController,
+);
 
 export default router;

@@ -17,6 +17,9 @@ module.exports = {
       allowNull: false,
       defaultValue: false,
     });
+
+
+    
   },
 
   async down(queryInterface) {

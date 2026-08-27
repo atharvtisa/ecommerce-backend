@@ -31,6 +31,7 @@ AUTH: {
   ADMIN_INACTIVE: "Admin account is inactive.",
   TOKEN_REQUIRED: "Authentication token is required.",
   INVALID_TOKEN: "Invalid or expired token.",
+  UNAUTHORIZED: "Unauthorize Access "
 
 },
 

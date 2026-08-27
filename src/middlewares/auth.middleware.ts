@@ -17,26 +17,30 @@ export const authenticateAdmin = (
   next: NextFunction,
 ): void => {
   try {
+    // 1. Get token from cookie first
+    const cookieToken = req.cookies?.adminToken;
+
+    // 2. Get token from Authorization header as fallback
     const authorization = req.headers.authorization;
 
-    if (!authorization) {
+    const headerToken =
+      authorization?.startsWith("Bearer ")
+        ? authorization.split(" ")[1]
+        : undefined;
+
+    const token = cookieToken || headerToken;
+
+    // 3. No token found
+    if (!token) {
       res.status(401).json({
         success: false,
-        message: "Authorization token is required",
+        message: "Authentication token is required",
       });
+
       return;
     }
 
-    const [scheme, token] = authorization.split(" ");
-
-    if (scheme !== "Bearer" || !token) {
-      res.status(401).json({
-        success: false,
-        message: "Invalid authorization format",
-      });
-      return;
-    }
-
+    // 4. Get JWT secret
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
@@ -44,11 +48,14 @@ export const authenticateAdmin = (
         success: false,
         message: "JWT secret is not configured",
       });
+
       return;
     }
 
+    // 5. Verify token
     const decoded = jwt.verify(token, secret);
 
+    // 6. Validate token payload
     if (
       typeof decoded !== "object" ||
       decoded === null ||
@@ -60,15 +67,18 @@ export const authenticateAdmin = (
         success: false,
         message: "Invalid authentication token",
       });
+
       return;
     }
 
+    // 7. Store authenticated admin
     req.admin = {
       id: decoded.id,
       email: decoded.email,
       role: "admin",
     };
 
+    // 8. Continue to controller
     next();
   } catch {
     res.status(401).json({

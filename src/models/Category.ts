@@ -15,7 +15,10 @@ class Category extends Model<
   declare name: string;
   declare slug: string;
   declare description: string | null;
-  declare isActive: CreationOptional<boolean>;
+declare status:
+  CreationOptional<"active" | "inactive">;
+  declare images: CreationOptional<string[]>;
+  declare imageCount: CreationOptional<number>;
 
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
@@ -45,12 +48,25 @@ Category.init(
       allowNull: true,
     },
 
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-      field: "is_active",
-    },
+  status: {
+  type: DataTypes.ENUM(
+    "active",
+    "inactive",
+  ),
+  allowNull: false,
+  defaultValue: "active",
+},
+    images: {
+  type: DataTypes.JSON,
+  allowNull: false,
+  defaultValue: [],
+},
+imageCount: {
+  type: DataTypes.INTEGER.UNSIGNED,
+  allowNull: false,
+  defaultValue: 0,
+  field: "image_count",
+},
   },
   {
     sequelize,

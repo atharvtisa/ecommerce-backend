@@ -19,10 +19,7 @@ export const updateAdminProfileSchema = Joi.object({
     .max(100)
     .required(),
 
-  email: Joi.string()
-    .email()
-    .max(150)
-    .required(),
+  
 
   removeProfileImage: Joi.boolean()
     .truthy("true")
@@ -94,3 +91,52 @@ export const changePasswordSchema = Joi.object({
       "string.empty": "Confirm password is required.",
     }),
 });
+
+
+
+export const requestAdminEmailChangeSchema = Joi.object({
+  newEmail: Joi.string()
+    .trim()
+    .lowercase()
+    .email()
+    .required()
+    .messages({
+      "string.empty": "New email is required.",
+      "string.email": "Please enter a valid email address.",
+      "any.required": "New email is required.",
+    }),
+});
+
+
+// =====================================================
+// VERIFY EMAIL CHANGE OTP
+// =====================================================
+
+export const verifyAdminEmailChangeOtpSchema = Joi.object({
+  otp: Joi.string()
+    .pattern(/^\d{6}$/)
+    .required()
+    .messages({
+      "string.empty": "OTP is required.",
+      "string.pattern.base": "OTP must be exactly 6 digits.",
+      "any.required": "OTP is required.",
+    }),
+});
+
+
+export const resendAdminPasswordResetOtpSchema =
+  Joi.object({
+    email: Joi.string()
+      .trim()
+      .lowercase()
+      .email()
+      .required()
+      .messages({
+        "string.empty":
+          "Email is required.",
+        "string.email":
+          "Please enter a valid email address.",
+        "any.required":
+          "Email is required.",
+      }),
+  });

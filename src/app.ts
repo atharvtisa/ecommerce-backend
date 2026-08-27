@@ -3,6 +3,8 @@ import cors from "cors";
 
 import path from "path";
 
+import cookieParser from "cookie-parser";
+
 import { env } from "./config/env";
 import routes from "./routes";
 
@@ -10,14 +12,17 @@ const app = express();
 
 app.use(
   cors({
-    origin: env.corsOrigin,
+    origin: process.env.CORS_ORIGIN,
+    credentials: true
   }),
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", routes);
+app.use(cookieParser());
+
+app.use("/", routes);
 
 app.use(
   "/uploads",

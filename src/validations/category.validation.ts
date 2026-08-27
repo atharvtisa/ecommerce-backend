@@ -110,4 +110,34 @@ export const updateCategorySchema = Joi.object({
   description: Joi.string().trim().allow("", null).optional(),
 
   isActive: Joi.boolean().optional(),
+
+    removeImages: Joi.string()
+    .optional(),
+});
+
+
+
+export const updateCategoryStatusSchema = Joi.object({
+  id: Joi.number()
+    .integer()
+    .positive()
+    .required()
+    .messages({
+      "number.base":
+        "Category id must be a number.",
+      "number.positive":
+        "Category id must be positive.",
+      "any.required":
+        "Category id is required.",
+    }),
+
+  status: Joi.string()
+    .valid("active", "inactive")
+    .required()
+    .messages({
+      "any.only":
+        "Status must be active or inactive.",
+      "any.required":
+        "Status is required.",
+    }),
 });
