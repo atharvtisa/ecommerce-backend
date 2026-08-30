@@ -9,6 +9,9 @@ const startServer = async (): Promise<void> => {
 
     console.log("MySQL database connection established");
 
+    await sequelize.sync();
+console.log("All database tables created successfully");
+
     app.listen(env.port, () => {
       console.log(
         `Server running on http://localhost:${env.port}`,
