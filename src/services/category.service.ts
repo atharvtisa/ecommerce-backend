@@ -27,6 +27,7 @@ interface UpdateCategoryData {
   id: number;
   name: string;
   description?: string ;
+    status?: "active" | "inactive";
 
 
   // New uploaded images
@@ -288,7 +289,7 @@ export const updateCategory = async ({
   id,
   name,
   description,
-  
+    status,
   files = [],
   removeImages = [],
 }: UpdateCategoryData) => {
@@ -388,6 +389,23 @@ export const updateCategory = async ({
 
       throw new Error(
         `A category can have maximum ${CategoryConstant.MAX_IMAGES} images.`,
+      );
+    }
+
+  // status update 
+
+       if (
+      status !== undefined &&
+      !["active", "inactive"].includes(
+        status,
+      )
+    ) {
+      await deletePhysicalImages(
+        newUploadedImages,
+      );
+
+      throw new Error(
+        "Invalid category status.",
       );
     }
 

@@ -15,6 +15,7 @@ class Category extends Model<
   declare name: string;
   declare slug: string;
   declare description: string | null;
+  
 declare status:
   CreationOptional<"active" | "inactive">;
   declare images: CreationOptional<string[]>;

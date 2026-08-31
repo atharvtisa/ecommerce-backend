@@ -33,6 +33,16 @@ export const updateSettingSchema = Joi.object({
     .allow("")
     .optional(),
 
+      storeLogo: Joi.string()
+    .trim()
+    .allow("")
+    .optional(),
+
+      favicon: Joi.string()
+    .trim()
+    .allow("")
+    .optional(),
+
   instagramUrl: Joi.string()
     .trim()
     .uri()
