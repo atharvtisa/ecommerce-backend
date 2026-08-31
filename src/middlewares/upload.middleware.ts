@@ -1,19 +1,241 @@
+// import multer from "multer";
+// import path from "path";
+// import fs from "fs";
+// import { CategoryConstant } from "../constants/category.constant";
+
+// const storage = multer.diskStorage({
+//   destination: (_req, _file, cb) => {
+//     cb(null, "uploads/categories");
+//   },
+
+//   filename: (_req, file, cb) => {
+//     const uniqueName = `${Date.now()}-${Math.round(
+//       Math.random() * 1e9,
+//     )}-${file.originalname}`;
+
+//     cb(null, uniqueName);
+//   },
+// });
+
+// const allowedImageTypes = [
+//   "image/jpeg",
+//   "image/png",
+//   "image/webp",
+//   "image/jpg",
+// ];
+
+// const fileFilter: multer.Options["fileFilter"] = (
+//   _req,
+//   file,
+//   cb,
+// ) => {
+//   const extension = file.originalname
+//     .toLowerCase()
+//     .split(".")
+//     .pop();
+
+//   const isValidMimeType = allowedImageTypes.includes(file.mimetype);
+
+//   const isValidExtension =
+//     extension !== undefined &&
+//     ["jpg", "jpeg", "png", "webp"].includes(extension);
+
+//   if (isValidMimeType || isValidExtension) {
+//     cb(null, true);
+//     return;
+//   }
+
+//   cb(
+//     new Error(
+//       "Only JPG, JPEG, PNG, and WEBP images are allowed.",
+//     ),
+//   );
+// };
+
+// export const categoryImageUpload = multer({
+//   storage,
+//   fileFilter,
+
+
+//   limits: {
+    
+//     fileSize: CategoryConstant.MAX_IMAGE_SIZE,
+//     files: CategoryConstant.MAX_IMAGES,
+//   },
+// });
+
+
+
+
+// const adminProfileStorage = multer.diskStorage({
+//   destination: (_req, _file, cb) => {
+//     cb(null, "uploads/admin");
+//   },
+
+//   filename: (_req, file, cb) => {
+//     const uniqueName = `${Date.now()}-${Math.round(
+//       Math.random() * 1e9,
+//     )}-${file.originalname}`;
+
+//     cb(null, uniqueName);
+//   },
+// });
+
+
+
+// export const adminProfileImageUpload = multer({
+//   storage: adminProfileStorage,
+//   fileFilter,
+//   limits: {
+//     fileSize: CategoryConstant.MAX_IMAGE_SIZE,
+//     files: 1,
+//   },
+// });
+
+
+
+
+
+// const settingsStorage = multer.diskStorage({
+//   destination: (_req, _file, cb) => {
+//     cb(null, "uploads/settings");
+//   },
+
+//   filename: (_req, file, cb) => {
+//     const uniqueName = `${Date.now()}-${Math.round(
+//       Math.random() * 1e9,
+//     )}-${file.originalname}`;
+
+//     cb(null, uniqueName);
+//   },
+// });
+
+// const settingsAllowedImageTypes = [
+//   "image/jpeg",
+//   "image/png",
+//   "image/webp",
+//   "image/jpg",
+//   "image/x-icon",
+//   "image/vnd.microsoft.icon",
+// ];
+
+// const settingsFileFilter: multer.Options["fileFilter"] = (
+//   _req,
+//   file,
+//   cb,
+// ) => {
+//   const extension = file.originalname
+//     .toLowerCase()
+//     .split(".")
+//     .pop();
+
+//   const isValidMimeType =
+//     settingsAllowedImageTypes.includes(
+//       file.mimetype,
+//     );
+
+//   const isValidExtension =
+//     extension !== undefined &&
+//     [
+//       "jpg",
+//       "jpeg",
+//       "png",
+//       "webp",
+//       "ico",
+//     ].includes(extension);
+
+//   if (
+//     isValidMimeType ||
+//     isValidExtension
+//   ) {
+//     cb(null, true);
+//     return;
+//   }
+
+//   cb(
+//     new Error(
+//       "Only JPG, JPEG, PNG, WEBP, and ICO images are allowed.",
+//     ),
+//   );
+// };
+
+// export const settingsImageUpload = multer({
+//   storage: settingsStorage,
+
+//   fileFilter: settingsFileFilter,
+
+//   limits: {
+//     fileSize:
+//       CategoryConstant.MAX_IMAGE_SIZE,
+
+//     // storeLogo + favicon
+//     files: 2,
+//   },
+// });
+
+
+
+
+
+
+
+
+
+
+
+
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { CategoryConstant } from "../constants/category.constant";
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, "uploads/categories");
-  },
+/*
+|--------------------------------------------------------------------------
+| Upload Directories
+|--------------------------------------------------------------------------
+*/
 
-  filename: (_req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(
-      Math.random() * 1e9,
-    )}-${file.originalname}`;
+const categoryUploadPath = path.resolve(
+  process.cwd(),
+  "uploads",
+  "categories",
+);
 
-    cb(null, uniqueName);
-  },
+const adminUploadPath = path.resolve(
+  process.cwd(),
+  "uploads",
+  "admin",
+);
+
+const settingsUploadPath = path.resolve(
+  process.cwd(),
+  "uploads",
+  "settings",
+);
+
+/*
+|--------------------------------------------------------------------------
+| Create Upload Folders Automatically
+|--------------------------------------------------------------------------
+*/
+
+[
+  categoryUploadPath,
+  adminUploadPath,
+  settingsUploadPath,
+].forEach((folder) => {
+  if (!fs.existsSync(folder)) {
+    fs.mkdirSync(folder, {
+      recursive: true,
+    });
+  }
 });
+
+/*
+|--------------------------------------------------------------------------
+| Common Image Types
+|--------------------------------------------------------------------------
+*/
 
 const allowedImageTypes = [
   "image/jpeg",
@@ -22,23 +244,36 @@ const allowedImageTypes = [
   "image/jpg",
 ];
 
+const allowedImageExtensions = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+];
+
+/*
+|--------------------------------------------------------------------------
+| Common Image Filter
+|--------------------------------------------------------------------------
+*/
+
 const fileFilter: multer.Options["fileFilter"] = (
   _req,
   file,
   cb,
 ) => {
-  const extension = file.originalname
+  const extension = path
+    .extname(file.originalname)
     .toLowerCase()
-    .split(".")
-    .pop();
+    .replace(".", "");
 
-  const isValidMimeType = allowedImageTypes.includes(file.mimetype);
+  const isValidMimeType =
+    allowedImageTypes.includes(file.mimetype);
 
   const isValidExtension =
-    extension !== undefined &&
-    ["jpg", "jpeg", "png", "webp"].includes(extension);
+    allowedImageExtensions.includes(extension);
 
-  if (isValidMimeType || isValidExtension) {
+  if (isValidMimeType && isValidExtension) {
     cb(null, true);
     return;
   }
@@ -50,63 +285,115 @@ const fileFilter: multer.Options["fileFilter"] = (
   );
 };
 
+/*
+|--------------------------------------------------------------------------
+| Generate Unique Filename
+|--------------------------------------------------------------------------
+*/
+
+const generateFileName = (
+  originalName: string,
+) => {
+  const extension = path
+    .extname(originalName)
+    .toLowerCase();
+
+  const baseName = path
+    .basename(originalName, extension)
+    .replace(/[^a-zA-Z0-9-_]/g, "-");
+
+  const timestamp = Date.now();
+
+  const randomNumber = Math.round(
+    Math.random() * 1e9,
+  );
+
+  return `${timestamp}-${randomNumber}-${baseName}${extension}`;
+};
+
+/*
+|--------------------------------------------------------------------------
+| CATEGORY IMAGE UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+const categoryStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, categoryUploadPath);
+  },
+
+  filename: (_req, file, cb) => {
+    const uniqueName = generateFileName(
+      file.originalname,
+    );
+
+    cb(null, uniqueName);
+  },
+});
+
 export const categoryImageUpload = multer({
-  storage,
+  storage: categoryStorage,
+
   fileFilter,
 
-
   limits: {
-    
-    fileSize: CategoryConstant.MAX_IMAGE_SIZE,
-    files: CategoryConstant.MAX_IMAGES,
+    fileSize:
+      CategoryConstant.MAX_IMAGE_SIZE,
+
+    files:
+      CategoryConstant.MAX_IMAGES,
   },
 });
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN PROFILE IMAGE UPLOAD
+|--------------------------------------------------------------------------
+*/
 
+const adminProfileStorage =
+  multer.diskStorage({
+    destination: (
+      _req,
+      _file,
+      cb,
+    ) => {
+      cb(null, adminUploadPath);
+    },
 
+    filename: (
+      _req,
+      file,
+      cb,
+    ) => {
+      const uniqueName =
+        generateFileName(
+          file.originalname,
+        );
 
-const adminProfileStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, "uploads/admin");
-  },
+      cb(null, uniqueName);
+    },
+  });
 
-  filename: (_req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(
-      Math.random() * 1e9,
-    )}-${file.originalname}`;
+export const adminProfileImageUpload =
+  multer({
+    storage: adminProfileStorage,
 
-    cb(null, uniqueName);
-  },
-});
+    fileFilter,
 
+    limits: {
+      fileSize:
+        CategoryConstant.MAX_IMAGE_SIZE,
 
+      files: 1,
+    },
+  });
 
-export const adminProfileImageUpload = multer({
-  storage: adminProfileStorage,
-  fileFilter,
-  limits: {
-    fileSize: CategoryConstant.MAX_IMAGE_SIZE,
-    files: 1,
-  },
-});
-
-
-
-
-
-const settingsStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, "uploads/settings");
-  },
-
-  filename: (_req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(
-      Math.random() * 1e9,
-    )}-${file.originalname}`;
-
-    cb(null, uniqueName);
-  },
-});
+/*
+|--------------------------------------------------------------------------
+| SETTINGS IMAGE TYPES
+|--------------------------------------------------------------------------
+*/
 
 const settingsAllowedImageTypes = [
   "image/jpeg",
@@ -117,45 +404,75 @@ const settingsAllowedImageTypes = [
   "image/vnd.microsoft.icon",
 ];
 
-const settingsFileFilter: multer.Options["fileFilter"] = (
-  _req,
-  file,
-  cb,
-) => {
-  const extension = file.originalname
-    .toLowerCase()
-    .split(".")
-    .pop();
+const settingsAllowedExtensions = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "ico",
+];
 
-  const isValidMimeType =
-    settingsAllowedImageTypes.includes(
-      file.mimetype,
+/*
+|--------------------------------------------------------------------------
+| SETTINGS FILE FILTER
+|--------------------------------------------------------------------------
+*/
+
+const settingsFileFilter: multer.Options["fileFilter"] =
+  (
+    _req,
+    file,
+    cb,
+  ) => {
+    const extension = path
+      .extname(file.originalname)
+      .toLowerCase()
+      .replace(".", "");
+
+    const isValidMimeType =
+      settingsAllowedImageTypes.includes(
+        file.mimetype,
+      );
+
+    const isValidExtension =
+      settingsAllowedExtensions.includes(
+        extension,
+      );
+
+    if (
+      isValidMimeType &&
+      isValidExtension
+    ) {
+      cb(null, true);
+      return;
+    }
+
+    cb(
+      new Error(
+        "Only JPG, JPEG, PNG, WEBP, and ICO images are allowed.",
+      ),
+    );
+  };
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS IMAGE UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+const settingsStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, settingsUploadPath);
+  },
+
+  filename: (_req, file, cb) => {
+    const uniqueName = generateFileName(
+      file.originalname,
     );
 
-  const isValidExtension =
-    extension !== undefined &&
-    [
-      "jpg",
-      "jpeg",
-      "png",
-      "webp",
-      "ico",
-    ].includes(extension);
-
-  if (
-    isValidMimeType ||
-    isValidExtension
-  ) {
-    cb(null, true);
-    return;
-  }
-
-  cb(
-    new Error(
-      "Only JPG, JPEG, PNG, WEBP, and ICO images are allowed.",
-    ),
-  );
-};
+    cb(null, uniqueName);
+  },
+});
 
 export const settingsImageUpload = multer({
   storage: settingsStorage,

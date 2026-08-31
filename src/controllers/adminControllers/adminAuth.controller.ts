@@ -439,6 +439,9 @@ export const requestAdminEmailChangeController = async (
       data: result,
     });
   } catch (error) {
+
+      console.error("REQUEST EMAIL CHANGE ERROR:", error);
+      
     res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message:
