@@ -109,7 +109,10 @@ export const updateCategorySchema = Joi.object({
 
   description: Joi.string().trim().allow("", null).optional(),
 
-  isActive: Joi.boolean().optional(),
+  status: Joi.string()
+    .valid("active", "inactive")
+    .optional(),
+
 
     removeImages: Joi.string()
     .optional(),
