@@ -500,11 +500,17 @@ export const requestAdminEmailChange = async (
 
   await admin.save();
 
+  console.log("1. EMAIL CHANGE START");
+
+console.log("2. Sending OTP to:", normalizedEmail);
+
   // OTP goes only to the NEW email.
   await sendAdminEmailChangeOtp(
     normalizedEmail,
     otp,
   );
+
+  console.log("3. OTP SENT SUCCESSFULLY");
 
   return {
     pendingEmail: normalizedEmail,
