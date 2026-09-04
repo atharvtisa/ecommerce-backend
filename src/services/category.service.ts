@@ -419,6 +419,13 @@ export const updateCategory = async ({
       }
     : {}),
 
+      ...(status !== undefined
+    ? {
+        status,
+      }
+    : {}),
+
+
       images: finalImages,
 
         imageCount: finalImages.length,

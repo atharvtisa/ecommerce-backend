@@ -500,9 +500,9 @@ export const requestAdminEmailChange = async (
 
   await admin.save();
 
-  console.log("1. EMAIL CHANGE START");
+ 
 
-console.log("2. Sending OTP to:", normalizedEmail);
+
 
   // OTP goes only to the NEW email.
   await sendAdminEmailChangeOtp(
@@ -510,7 +510,7 @@ console.log("2. Sending OTP to:", normalizedEmail);
     otp,
   );
 
-  console.log("3. OTP SENT SUCCESSFULLY");
+  
 
   return {
     pendingEmail: normalizedEmail,
@@ -649,7 +649,7 @@ export const resendAdminEmailChangeOtp = async (
       );
     }
   }
-  console.log("1. Starting email change request");
+  
 
   const otp = generateOtp();
 
@@ -660,22 +660,20 @@ export const resendAdminEmailChangeOtp = async (
 
   const expiresAt = generateOtpExpiry();
 
-console.log("2. OTP generated:", otp);
-console.log("3. Sending email to:");
+
 
   /*
    * Overwriting the hash makes the
    * previous OTP automatically invalid.
    */
 
-   console.log("4. Email sent successfully")
+  
   admin.emailChangeOtp = hashedOtp;
   admin.emailChangeOtpExpiresAt =
     expiresAt;
 
   await admin.save();
 
-console.log("5. Database updated");
 
   await sendAdminEmailChangeOtp(
     admin.pendingEmail,

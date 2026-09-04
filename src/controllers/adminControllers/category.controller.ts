@@ -26,7 +26,7 @@ export const createCategoryController = async (
      const files =
       (req.files as Express.Multer.File[]) || [];
 
-          console.log("CATEGORY FILES:", files);
+        
 
     const category = await createCategory({
       name: req.body.name,
@@ -212,6 +212,8 @@ export const updateCategory = async (
 
         // only updates when provided
         description: value.description,
+
+        status: value.status,
 
         files,
         removeImages,
